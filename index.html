@@ -85,6 +85,14 @@ select{background:var(--char);color:var(--parch);border:1px solid var(--rule);bo
 .reel{position:absolute;top:70px;inset-inline:0;overflow:hidden;z-index:2;mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)}
 .reel .tr{display:flex;gap:14px;width:max-content;animation:drift 140s linear infinite}
 .reel img{height:clamp(150px,calc(100svh - 480px),62vh);width:auto;aspect-ratio:16/9;object-fit:cover;border-radius:4px;box-shadow:0 18px 50px rgba(0,0,0,.55)}
+.reel button{all:unset;cursor:pointer;display:block;border-radius:4px;transition:transform .35s ease,filter .35s ease}
+.reel button:hover,.reel button:focus-visible{transform:scale(1.03);filter:brightness(1.08)}
+.reel button:focus-visible{outline:2px solid #e8c46a;outline-offset:3px}
+.reel:hover .tr,.reel:focus-within .tr{animation-play-state:paused}
+.inl{margin:14px 0 6px;aspect-ratio:16/9;border-radius:6px;overflow:hidden;background:#000;box-shadow:0 18px 50px rgba(0,0,0,.55)}
+.inl iframe{width:100%;height:100%;border:0;display:block}
+.row.flash{animation:flash 1.6s ease}
+@keyframes flash{0%{background:rgba(232,196,106,.18)}100%{background:transparent}}
 @keyframes drift{to{transform:translateX(-50%)}}
 [dir=rtl] .reel .tr{animation-name:driftR}
 @keyframes driftR{to{transform:translateX(50%)}}
@@ -202,7 +210,7 @@ footer p{max-width:60ch}
   <img class="back" id="back" src="greekfire.jpg" alt="">
   <img class="lid" id="lid" src="lid.jpg" alt="">
   <div class="shade"></div>
-  <div class="reel" aria-hidden="true"><div class="tr" id="reelTr"></div></div>
+  <div class="reel"><div class="tr" id="reelTr"></div></div>
   <div class="title" id="title">
    <h1>Elias Vale</h1>
    <div class="sub">The Last Witness</div>
@@ -338,11 +346,11 @@ const DOSSIER={"1": {"detail": "In January 532 a botched public hanging lit the 
 const STILLS=[
  ['greekfire.jpg','Episode 14','Greek fire, Constantinople, 674'],
  ['sappers.jpg','Episode 10','Undermining the walls of Jerusalem, 614'],
- ['ledger.jpg','Episode 14','The ledger'],
- ['maria.jpg','Episode 10','Maria hears her husband’s voice'],
+ ['ledger.jpg','Episode 10','The ledger'],
+ ['maria.jpg','Episode 14','Maria hears her husband’s voice'],
  ['caravan.jpg','Episode 10','The road south, 610'],
  ['damascus.jpg','Episode 14','Damascus, 661'],
- ['candle.jpg','Episode 10','Waiting for the knock'],
+ ['candle.jpg','Episode 14','Waiting for the knock'],
  ['elias_shop.jpg','Episode 10','Istanbul, 2025'],
  ['boat.jpg','Episode 14','Kemal and Elias'],
  ['harbor.jpg','Episode 14','The harbour'],
@@ -454,7 +462,16 @@ new IntersectionObserver(es=>es.forEach(x=>era.classList.toggle('on',x.isInterse
 function pickRow(){const mid=innerHeight*.5;let best=null,bd=1e9;rowsEl.querySelectorAll('.row').forEach(r=>{const b=r.getBoundingClientRect(),d=Math.abs(b.top+b.height/2-mid);if(d<bd){bd=d;best=r}});if(best&&bd<innerHeight*.5)goTo(+best.dataset.n)}
 addEventListener('scroll',()=>requestAnimationFrame(pickRow),{passive:true});
 // shots from every episode across the top
-const shots=EPS.filter(live).map(e=>`<img src="tb${e.n}.jpg" alt="">`).join('');$('reelTr').innerHTML=shots+shots;
+const shots=EPS.filter(live).map(e=>`<button type="button" data-n="${e.n}" aria-label="Watch episode ${e.n}: ${e.t.replace(/"/g,'&quot;')}"><img src="tb${e.n}.jpg" srcset="tb${e.n}.jpg 1920w, bg${e.n}.jpg 3840w" sizes="(max-width:760px) 85vw, 110vh" alt="" decoding="async"></button>`).join('');$('reelTr').innerHTML=shots+shots;
+// click a shot: go straight to that episode below and play it there
+function watchEp(n){const e=EPS.find(x=>x.n==n);const row=document.querySelector(`.row[data-n="${n}"]`);if(!e||!row)return;
+ document.querySelectorAll('.inl').forEach(x=>x.remove());
+ const box=document.createElement('div');box.className='inl';
+ box.innerHTML=`<iframe src="https://www.youtube-nocookie.com/embed/${e.id}?autoplay=1&rel=0&modestbranding=1&playsinline=1" title="${e.t.replace(/"/g,'&quot;')}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
+ const h=row.querySelector('h3');h.after(box);const m=row.querySelector('.mini');if(m)m.style.display='none';
+ row.classList.remove('flash');void row.offsetWidth;row.classList.add('flash');
+ row.scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'});goTo(n)}
+$('reelTr').addEventListener('click',ev=>{const b=ev.target.closest('button[data-n]');if(b)watchEp(+b.dataset.n)});
 if(reduce)$('reelTr').style.animation='none';
 frame();tilt();
 </script>
